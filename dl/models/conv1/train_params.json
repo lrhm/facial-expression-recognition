@@ -1,5 +1,6 @@
 {
-    "model": "conv_lstm",
+    "model": "conv1",
+    "target": "/home/bluesk/Documents/facial-expression-recognition/dlm/results",
     "cuda": true,
     "train_batch_size": 6,
     "test_batch_size": 50,
