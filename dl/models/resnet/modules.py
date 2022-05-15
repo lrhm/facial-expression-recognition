@@ -4,6 +4,7 @@ import torch as t
 import torch.nn.functional as F
 from torch import nn
 
+
 class ResNetBlock(nn.Module):
     def __init__(
         self, c_in, act, subsample=False, c_out=-1, droupout=0.1, double_dropout=False
@@ -66,16 +67,7 @@ class ResNetClassifier(nn.Module):
         c_hidden=[32, 64, 128, 256],
         in_channel=1,
         num_classes=7,
-        **kwargs
     ):
-        """
-        Inputs:
-            num_classes - Number of classification outputs (10 for CIFAR10)
-            num_blocks - List with the number of ResNet blocks to use. The first block of each group uses downsampling, except the first.
-            c_hidden - List with the hidden dimensionalities in the different blocks. Usually multiplied by 2 the deeper we go.
-            act_fn_name - Name of the activation function to use, looked up in "act_fn_by_name"
-            block_name - Name of the ResNet block, looked up in "resnet_blocks_by_name"
-        """
         super().__init__()
 
         self.c_hidden = c_hidden
@@ -83,14 +75,18 @@ class ResNetClassifier(nn.Module):
         self.in_channel = in_channel
         self.num_classes = num_classes
 
+        # creates the layers
         self.create_network()
+
+        # init the weights for better initial guess
         self.init_params()
 
     def create_network(self):
+
+        # array of hidden channels
         c_hidden = self.c_hidden
 
         # A first convolution on the original image to scale up the channel size
-
         self.input_net = nn.Sequential(
             nn.Conv2d(
                 self.in_channel,
@@ -113,7 +109,12 @@ class ResNetClassifier(nn.Module):
                 )  # Subsample the blocks of each group, except the very first one.
                 blocks.append(
                     # first block is subsampled, others have input and output channels equal
-                    ResNetBlock(c_hidden[block_idx if not subsample else (block_idx - 1)], nn.ReLU(), subsample, c_hidden[block_idx])
+                    ResNetBlock(
+                        c_hidden[block_idx if not subsample else (block_idx - 1)],
+                        nn.ReLU(),
+                        subsample,
+                        c_hidden[block_idx],
+                    )
                 )
 
         self.blocks = nn.Sequential(*blocks)
@@ -131,9 +132,7 @@ class ResNetClassifier(nn.Module):
         # Fan-out focuses on the gradient distribution, and is commonly used in ResNets
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(
-                    m.weight, mode="fan_out", nonlinearity="relu"
-                )
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)

@@ -90,7 +90,6 @@ class FER2013(VisionDataset):
 
     def __getitem__(self, idx: int) -> Tuple[Any, Any]:
         image, target = self._samples[idx]
-        # image = Image.fromarray(image.numpy())
 
         if self.transform is not None:
             image = self.transform(image)
