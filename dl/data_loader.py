@@ -6,7 +6,7 @@ from tqdm import tqdm
 import h5py
 from torch.utils.data import DataLoader, Dataset
 from pytorch_lightning import LightningDataModule
-from .utils.data_manager import DataManger
+from .custom_fer_loaders import FER2013
 
 
 class CustomDataModule(LightningDataModule):
@@ -15,22 +15,11 @@ class CustomDataModule(LightningDataModule):
         self.data_location = params.data_location
         self.train_batch_size = params.train_batch_size
         self.test_batch_size = params.test_batch_size
-        self.data_location = params.data_location
-        emotions = os.listdir(params.data_location)
-        folders = tuple(
-            (em, os.path.join(params.data_location, em)) for em in emotions
-        )
-        all_images = []
-        for emotion, folder in folders:
-            images = os.listdir(folder)
-            for image in images:
-                all_images.append((emotion, os.path.join(folder, image)))
-        ipdb.set_trace()
-
+        # self.data_location = params.data_location
 
     def train_dataloader(self):
         # creates a DeepCoastalDataset object
-        dataset = CustomDataset(self.data_location, train=True,)
+        dataset = FER2013(self.data_location, train=True)
         return DataLoader(
             dataset,
             batch_size=self.train_batch_size,
@@ -40,7 +29,10 @@ class CustomDataModule(LightningDataModule):
 
     def val_dataloader(self):
         # creates a DeepCoastalDataset object
-        dataset = CustomDataset(self.data_location, train=False,)
+        dataset = FER2013(
+            self.data_location,
+            train=False,
+        )
         return DataLoader(
             dataset,
             batch_size=self.train_batch_size,
@@ -49,8 +41,11 @@ class CustomDataModule(LightningDataModule):
         )
 
     def test_dataloader(self):
-        # creates a DeepCoastalDataset object
-        dataset = CustomDataset(self.data_location, train=False,)
+
+        dataset = FER2013(
+            self.data_location,
+            train=False,
+        )
         return DataLoader(
             dataset,
             batch_size=self.train_batch_size,
@@ -59,27 +54,8 @@ class CustomDataModule(LightningDataModule):
         )
 
 
-class CustomDataset(Dataset):
-    def __init__(
-        self,
-        data_location: str = "/mnt/facial_expression_dataset/",
-        train: bool = True,
-    ):
-        self.data_location = data_location
-        self.train = train
-        emotions = os.listdir(data_location)
-        folders = tuple(os.path.join(data_location, em) for em in emotions)
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        x = self.data[idx, : self.in_seq_len]
-        y = self.data[idx, self.out_seq_len :]
-        return x, y
-
-
 def test():
+    
     data_module = CustomDataModule()
     train_dataloader = data_module.train_dataloader()
     for i, (x, y) in enumerate(train_dataloader):
@@ -106,5 +82,3 @@ def test():
 
 if __name__ == "__main__":
     test()
-
-
