@@ -59,7 +59,6 @@ class AxialClassifier(nn.Module):
         )
 
         self.classifier = nn.Linear(48 * 48, self.num_classes)
-        self.sigmoid = nn.Sigmoid()
         # self.big_classifier = nn.Sequential(
         #     nn.Linear(48 * 48, 1024),
         #     nn.ReLU(),
@@ -82,5 +81,4 @@ class AxialClassifier(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
 
-        x = self.sigmoid(x)
-        return x # F.softmax(x, dim=1)
+        return F.softmax(x, dim=1)
