@@ -73,7 +73,7 @@ class FER2013(VisionDataset):
                 for row in csv.DictReader(file)
             ]
 
-        test_percentage = 0.1
+        test_percentage = 0.2
         if train:
             self._split = "train"
             self._samples = self._samples[: -int(len(self._samples) * test_percentage)]
