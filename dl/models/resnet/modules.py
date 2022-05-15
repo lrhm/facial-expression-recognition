@@ -9,13 +9,7 @@ class ResNetBlock(nn.Module):
     def __init__(
         self, c_in, act, subsample=False, c_out=-1, droupout=0.1, double_dropout=False
     ):
-        """
-        Inputs:
-            c_in - Number of input features
-            act_fn - Activation class constructor (e.g. nn.ReLU)
-            subsample - If True, we want to apply a stride inside the block and reduce the output shape by 2 in height and width
-            c_out - Number of output features. Note that this is only relevant if subsample is True, as otherwise, c_out = c_in
-        """
+
         super().__init__()
 
         # the first layer has c_in input channels and c_out output channels
@@ -50,6 +44,7 @@ class ResNetBlock(nn.Module):
         self.act = act
 
     def forward(self, x):
+        
         z = self.net(x)
         if self.downsample is not None:
             x = self.downsample(x)
