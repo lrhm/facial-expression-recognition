@@ -34,6 +34,8 @@ class BaseClassificationModel(LightningModule):
         acc = self.val_accuracy.compute()
         self.log("accuracy", acc, prog_bar=True)
         self.log("val_loss", 1 - acc, prog_bar=True)
+        avg_loss = t.stack([x["val_loss_bce"] for x in outputs]).mean()
+        self.log("val_loss_bce", avg_loss, prog_bar=True)
         self.val_accuracy.reset()
         t.save(
             self.state_dict(), os.path.join(self.params.save_path, "checkpoint.ckpt"),
@@ -48,10 +50,12 @@ class BaseClassificationModel(LightningModule):
         if batch_idx == 0:
             pass
         pred_y = self(x)
+        loss = self.loss(pred_y, y)
         maxes = t.argmax(pred_y, dim=1)
         pred_y = t.eye(self.num_classes)[maxes].to(self.device)
         y = y.int()
         self.val_accuracy.update(pred_y, y)
+        return {"val_loss_bce": loss}
 
     def test_step(self, batch: tuple[t.Tensor, t.Tensor], batch_idx: int):
         x, y = batch

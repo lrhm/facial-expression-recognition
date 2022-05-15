@@ -31,7 +31,7 @@ class CustomDataModule(LightningDataModule):
         # creates a DeepCoastalDataset object
         dataset = FER2013(
             self.data_location,
-            train=False,
+            train=True,
         )
         return DataLoader(
             dataset,

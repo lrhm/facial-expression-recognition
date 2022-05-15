@@ -38,21 +38,21 @@ class FER2013(VisionDataset):
         target_transform: Optional[Callable] = None,
     ) -> None:
 
-        super().__init__(data_location, transform=transform, target_transform=target_transform)
+        super().__init__(
+            data_location, transform=transform, target_transform=target_transform
+        )
 
         base_folder = data_location
         file_name, md5 = self._RESOURCES["fer"]
-        data_file = data_location #+ file_name
+        data_file = data_location  # + file_name
 
-        
-        trsfm = transforms.Compose(
-            [
-                transforms.ToTensor(),
-                # transforms.RandomHorizontalFlip(),
-                transforms.RandomAffine(degrees=10),
-                # transforms.Normalize((0.1307,), (0.3081,)),
-            ]
+        trsfm = torch.nn.Sequential(
+            # transforms.ToTensor(),
+            # transforms.RandomHorizontalFlip(),
+            transforms.RandomAffine(degrees=10),
+            # transforms.Normalize((0.1307,), (0.3081,)),
         )
+        # self.transform = trsfm
         self.transform = trsfm
 
         if not check_integrity(str(data_file), md5=md5):
@@ -66,13 +66,15 @@ class FER2013(VisionDataset):
             self._samples = [
                 (
                     torch.tensor(
-                        [int(idx) for idx in row["pixels"].split()], dtype=torch.uint8
-                    ).reshape(48, 48),
+                        [int(idx) for idx in row["pixels"].split()], dtype=torch.float32
+                    ).reshape(1, 48, 48)
+                    / 255.0,
                     int(row["emotion"]) if "emotion" in row else None,
                 )
                 for row in csv.DictReader(file)
             ]
 
+        # ipdb.set_trace()
         test_percentage = 0.2
         if train:
             self._split = "train"
@@ -87,8 +89,8 @@ class FER2013(VisionDataset):
         return len(self._samples)
 
     def __getitem__(self, idx: int) -> Tuple[Any, Any]:
-        image_tensor, target = self._samples[idx]
-        image = Image.fromarray(image_tensor.numpy())
+        image, target = self._samples[idx]
+        # image = Image.fromarray(image.numpy())
 
         if self.transform is not None:
             image = self.transform(image)
