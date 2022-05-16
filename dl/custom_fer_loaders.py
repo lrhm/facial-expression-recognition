@@ -82,6 +82,7 @@ class FER2013(VisionDataset):
         else:
             self._split = "test"
             self._samples = self._samples[-int(len(self._samples) * test_percentage) :]
+            self.transform = None
 
         # ipdb.set_trace()
 

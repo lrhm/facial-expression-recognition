@@ -9,6 +9,6 @@ class GaussianNoise(nn.Module):
 
     def forward(self, x):
         if self.training:
-            return x + t.randn(x.size()) * self.sigma
+            return x + t.rand_like(x) * self.sigma
         else:
             return x

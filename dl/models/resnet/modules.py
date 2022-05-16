@@ -44,7 +44,7 @@ class ResNetBlock(nn.Module):
         self.act = act
 
     def forward(self, x):
-        
+
         z = self.net(x)
         if self.downsample is not None:
             x = self.downsample(x)

@@ -50,13 +50,13 @@ class Conv2dClassifier(nn.Module):
         self.noise_layer = GaussianNoise(0.1)
 
         # 48x48x1
-        self.conv1 = ConvBlock(c_in, 64, kernel_size=4, stride=1, padding=1)
+        self.conv1 = ConvBlock(c_in, 64, kernel_size=3, stride=1, padding=1)
         # 48x48x64
-        self.conv2 = ConvBlock(64, 64, kernel_size=4, stride=2, padding=1)
+        self.conv2 = ConvBlock(64, 64, kernel_size=3, stride=2, padding=1)
         # 24x24x64
-        self.conv3 = ConvBlock(64, 64, kernel_size=4, stride=2, padding=1)
+        self.conv3 = ConvBlock(64, 64, kernel_size=3, stride=2, padding=1)
         # 12x12x64
-        self.conv4 = ConvBlock(64, 64, kernel_size=4, stride=2, padding=1)
+        self.conv4 = ConvBlock(64, 64, kernel_size=3, stride=2, padding=1)
         # 6x6x64
 
         self.classifier = nn.Linear(64 * 6 * 6, num_classes)
