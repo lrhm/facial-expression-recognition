@@ -50,7 +50,6 @@ class BaseClassificationModel(LightningModule):
         return {"val_loss": acc}
 
     def training_epoch_end(self, outputs):
-        ipdb.set_trace()
         plot_train_loss(self.train_loss_list, save_path=os.path.join(self.params.save_path, "training_loss.png"))
         avg_loss = t.stack([x["loss"] for x in outputs]).mean()
 
@@ -84,7 +83,7 @@ class BaseClassificationModel(LightningModule):
             "accuracy": accuracy,
         }
         test_metrics = {k: v for k, v in test_metrics.items()}
-        self.log("alisucks", test_metrics, prog_bar=True)
+        self.log("lol", test_metrics, prog_bar=True)
 
     def configure_optimizers(self):
         lr = self.params.lr
