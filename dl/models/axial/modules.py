@@ -12,21 +12,41 @@ class ResidualAxialBlock(nn.Module):
         self.embedding_dim = embedding_dim
         self.num_heads = num_heads
 
-        self.attention = AxialAttention(embedding_dim, num_dimentions, num_heads, 4, -1, True)
+        self.attention = AxialAttention(
+            embedding_dim, num_dimentions, num_heads, 4, -1, True
+        )
+
         self.do = nn.Dropout(droupout)
         self.act = nn.ReLU()
 
     def forward(self, x):
-        z = self.attention(x)
-        out = z + x
-        out = self.act(out)
+        # z = x
+        x = self.attention(x)
+        # x = self.res_attention(x)
+        # out = self.act(x)
         out = self.do(out)
         return out
 
 
+class Conv2DBlock(nn.Module):
+    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, droupout):
+        super().__init__()
+        self.conv = nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding)
+        self.bn = nn.BatchNorm2d(out_channel)
+        self.do = nn.Dropout(droupout)
+        self.act = nn.ReLU()
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.act(x)
+        x = self.do(x)
+        return x
+
+
 class AxialClassifier(nn.Module):
     def __init__(
-        self, num_classes=7, embedding_dim=16, num_heads=4, num_layers=2, dropout=0.01
+        self, num_classes=7, embedding_dim=32, num_heads=4, num_layers=1, dropout=0.01
     ):
         super().__init__()
 
@@ -36,51 +56,46 @@ class AxialClassifier(nn.Module):
         self.num_layers = num_layers
         self.dropout = dropout
 
-        self.embedding = AxialPositionalEmbedding(self.embedding_dim, (48, 48), -1)
+        self.embedding = AxialPositionalEmbedding(self.embedding_dim, (48, 48), 1)
         self.embedding_encoder = nn.Sequential(
             nn.Linear(1, self.embedding_dim, bias=False), nn.ReLU()
         )
 
-        self.attentions = nn.Sequential()
-        for i in range(self.num_layers):
-            # we need setattr so that lightning can find the module
-            self.__setattr__(
-                "layer_{}".format(i),
-                ResidualAxialBlock(self.embedding_dim, 2, self.num_heads, self.dropout),
-            )
-            self.attentions.add_module(
-                "layer_{}".format(i), self.__getattr__("layer_{}".format(i))
-            )
-
-        self.avg_pool_classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Linear(self.embedding_dim, self.num_classes),
+        self.attentions = nn.Sequential(
+            AxialAttention(self.embedding_dim, 2, self.num_heads, 4, 1, True),
+            nn.ReLU(),
+            AxialAttention(self.embedding_dim, 2, self.num_heads, 4, 1, True),
+            nn.ReLU(),
         )
 
-        self.classifier = nn.Linear(48 * 48, self.num_classes)
-        self.sigmoid = nn.Sigmoid()
-        # self.big_classifier = nn.Sequential(
-        #     nn.Linear(48 * 48, 1024),
-        #     nn.ReLU(),
-        #     nn.Linear(1024, 512),
-        #     nn.ReLU(),
-        #     nn.Linear(512, self.num_classes),
-        # )
+        self.conv_classifier = nn.Sequential(
+            Conv2DBlock(1, self.embedding_dim, 3, 1, 1, self.dropout),
+            Conv2DBlock(self.embedding_dim, self.embedding_dim, 3, 1, 1, self.dropout),
+            Conv2DBlock(self.embedding_dim, self.embedding_dim, 3, 1, 1, self.dropout),
+        )
+
+        self.classifier = nn.Linear(48 * 48 * 2, self.num_classes)
 
     def forward(self, x):
         # ipdb.set_trace()
+
+        conv_res = self.conv_classifier(x)
+
         x = x.permute(0, 2, 3, 1)
+        # ipdb.set_trace()
         x = self.embedding_encoder(x)
+        x = x.permute(0, 3, 1, 2)
         x = self.embedding(x)
         x = self.attentions(x)
 
-        x = x.max(dim=-1)[0]
-        # x = x.permute(0, 3, 1, 2)
-        # x = self.avg_pool_classifier(x)
-
+        # conv_res = conv_res.permute(0, 2, 3, 1)
+        # conv_res = conv_res.view(conv_res.size(0), -1)
+        # x = x.view(x.size(0), -1)
+        conv_res = conv_res.max(dim=1)[0]
+        x = x.max(dim=1)[0]
+        x = t.cat([x, conv_res], dim=1)
+        # x = x + conv_res
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
 
-        x = self.sigmoid(x)
-        return x # F.softmax(x, dim=1)
+        return F.softmax(x, dim=1)

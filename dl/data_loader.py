@@ -15,39 +15,31 @@ from torchvision import transforms, utils
 # load dataa
 from dl.custom_fer_loaders import DataFER
 
-df = pd.read_csv("~/fer2013.csv")
-# split train test valid
-df_train = df[df.Usage == 'Training'].drop(['Usage'], axis=1).reset_index().drop(columns="index")
-df_valid = df[df.Usage == 'PrivateTest'].drop(['Usage'], axis=1).reset_index().drop(columns="index")
-df_test = df[df.Usage == 'PublicTest'].drop(['Usage'], axis=1).reset_index().drop(columns="index")
-train_images = df_train.iloc[:, 1]
-train_labels = df_train.iloc[:, 0]
-valid_images = df_train.iloc[:, 1]
-valid_labels = df_train.iloc[:, 0]
-test_images = df_test.iloc[:, 1]
-test_labels = df_test.iloc[:, 0]
 
+# # ipdb.set_trace(   )
 
-train_trans = transforms.Compose(
-    [
-        transforms.ToPILImage(),
-        transforms.Grayscale(num_output_channels=1),
-        transforms.RandomCrop(48, padding=4, padding_mode='reflect'),
-        # maybe useful
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        # normalize
-        transforms.Normalize((0.5), (0.5), inplace=True)
-    ])
+# train_trans = transforms.Compose(
+#     [
+#         transforms.ToPILImage(),
+#         transforms.Grayscale(num_output_channels=1),
+#         transforms.RandomCrop(48, padding=4, padding_mode="reflect"),
+#         # maybe useful
+#         transforms.RandomHorizontalFlip(),
+#         transforms.ToTensor(),
+#         # normalize
+#         # transforms.Normalize((0.5), (0.5), inplace=True)
+#     ]
+# )
 
-# transform data for validation (just greyscale and normalize)
-val_trans = transforms.Compose(
-    [
-        transforms.ToPILImage(),
-        transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5), (0.5))
-    ])
+# # transform data for validation (just greyscale and normalize)
+# val_trans = transforms.Compose(
+#     [
+#         transforms.ToPILImage(),
+#         transforms.Grayscale(num_output_channels=1),
+#         transforms.ToTensor(),
+#         # transforms.Normalize((0.5), (0.5))
+#     ]
+# )
 
 
 class CustomDataModule(LightningDataModule):
@@ -56,11 +48,60 @@ class CustomDataModule(LightningDataModule):
         self.data_location = params.data_location
         self.train_batch_size = params.train_batch_size
         self.test_batch_size = params.test_batch_size
-        # self.data_location = params.data_location
+
+        df = pd.read_csv(params.data_location)
+        # split train test valid
+        df_train = (
+            df[df.Usage == "Training"]
+            .drop(["Usage"], axis=1)
+            .reset_index()
+            .drop(columns="index")
+        )
+        df_valid = (
+            df[df.Usage == "PrivateTest"]
+            .drop(["Usage"], axis=1)
+            .reset_index()
+            .drop(columns="index")
+        )
+        df_test = (
+            df[df.Usage == "PublicTest"]
+            .drop(["Usage"], axis=1)
+            .reset_index()
+            .drop(columns="index")
+        )
+
+        self.val_transform = None
+        self.train_transform = t.nn.Sequential(
+            # transforms.RandomAffine(10)
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(10),
+            transforms.RandomCrop(48, padding=4, padding_mode="reflect"),
+        )
+
+        self.df_train = self.data_set_csv_reader(df_train)
+        self.df_valid = self.data_set_csv_reader(df_valid)
+        self.df_test = self.data_set_csv_reader(df_test)
+        # ipdb.set_trace()
+
+    def data_set_csv_reader(self, data):
+        # ipdb.set_trace()
+        data = [
+            (
+                t.tensor(
+                    [int(pixel) for pixel in item[1].split(" ")],
+                    dtype=t.float32,
+                ).reshape(1, 48, 48)
+                / 255,
+                int(item[0]),
+            )
+            for item in data.iloc
+        ]
+
+        return data
 
     def train_dataloader(self):
         # creates a DeepCoastalDataset object
-        dataset = DataFER(train_images, train_labels, train_trans)
+        dataset = DataFER(self.df_train, self.train_transform)
         return DataLoader(
             dataset,
             batch_size=self.train_batch_size,
@@ -70,7 +111,7 @@ class CustomDataModule(LightningDataModule):
 
     def val_dataloader(self):
         # creates a DeepCoastalDataset object
-        dataset = DataFER(valid_images, valid_labels, val_trans)
+        dataset = DataFER(self.df_valid, self.val_transform)
         return DataLoader(
             dataset,
             batch_size=self.train_batch_size,
@@ -80,7 +121,7 @@ class CustomDataModule(LightningDataModule):
 
     def test_dataloader(self):
 
-        dataset = DataFER(train_images, train_labels, train_trans)
+        dataset = DataFER(self.df_test, self.val_transform)
         return DataLoader(
             dataset,
             batch_size=self.train_batch_size,
@@ -114,6 +155,6 @@ def test():
     """
     # reads file in h5 format
 
+
 if __name__ == "__main__":
     test()
-

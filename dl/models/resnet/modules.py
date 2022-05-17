@@ -120,7 +120,7 @@ class ResNetClassifier(nn.Module):
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
             nn.Linear(c_hidden[-1], self.num_classes),
-            nn.Softmax(dim=1),
+            nn.ReLU(),
         )
 
     def init_params(self):
@@ -140,4 +140,5 @@ class ResNetClassifier(nn.Module):
         x = self.blocks(x)
         # Classification output
         x = self.output_net(x)
-        return x.squeeze(1)
+        # ipdb.set_trace()
+        return x

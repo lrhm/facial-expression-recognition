@@ -7,28 +7,29 @@ from torchvision import transforms, utils
 
 
 classes = {
-    0: 'Angry', 1: 'Disgust', 2: 'Fear', 3: 'Happy', 4: 'Sad', 5: 'Surprise', 6: 'Neutral'
+    0: "Angry",
+    1: "Disgust",
+    2: "Fear",
+    3: "Happy",
+    4: "Sad",
+    5: "Surprise",
+    6: "Neutral",
 }
 
 # transform data added horizontal flip and random cropping
 
 # dataset class
 class DataFER(Dataset):
-
-    def __init__(self, images, labels, transforms):
-        self.X = images
-        self.y = labels
+    def __init__(self, data, transforms):
+        self.data = data
         self.transforms = transforms
 
     def __len__(self):
-        return len(self.X)
+        return len(self.data)
 
     def __getitem__(self, i):
-        # convert pixels from string to list of int
-        data = [int(el) for el in self.X[i].split(" ")]
-        # reshape into 48 x 48 x 1 np array for transform
-        data = np.asarray(data).astype(np.uint8).reshape(48, 48, 1)
-        data = self.transforms(data)
-        label = self.y[i]
+        image, target = self.data[i]
+        if self.transforms is not None:
+            image = self.transforms(image)
         # return a tuple of data transformed data and corresponding label
-        return (data, label)
+        return (image, target)

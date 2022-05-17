@@ -59,7 +59,7 @@ class Conv2dClassifier(nn.Module):
         self.conv4 = ConvBlock(64, 64, kernel_size=3, stride=2, padding=1)
         # 6x6x64
 
-        self.classifier = nn.Linear(64 * 6 * 6, num_classes)
+        self.classifier = nn.Sequential(nn.Linear(64 * 6 * 6, num_classes), nn.ReLU())
 
     def forward(self, x):
 
