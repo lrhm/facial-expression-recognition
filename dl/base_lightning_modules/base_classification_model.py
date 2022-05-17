@@ -52,7 +52,7 @@ class BaseClassificationModel(LightningModule):
             self.state_dict(), os.path.join(self.params.save_path, "checkpoint.ckpt"),
         )
         plot_train_loss(self.train_loss_list, self.val_loss_list,
-                        save_path=os.path.join(self.params.save_path, "training_loss.png"))
+                        save_path=os.path.join(self.params.save_path, "loss vs epochs.png"))
 
         return {"val_loss": acc}
 

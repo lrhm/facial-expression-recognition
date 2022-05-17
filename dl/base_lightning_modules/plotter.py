@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 def plot_train_loss(train,val,save_path):
     plt.clf()
     plt.plot(*zip(*train), label = "train")
-    plt.plot(*zip(*train), label = "val")
+    plt.plot(*zip(*val), label = "val")
     plt.legend()
     plt.xlabel("iteration")
     plt.ylabel("loss")
