@@ -73,9 +73,9 @@ class CustomDataModule(LightningDataModule):
         self.val_transform = None
         self.train_transform = t.nn.Sequential(
             # transforms.RandomAffine(10)
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomRotation(10),
-            transforms.RandomCrop(48, padding=4, padding_mode="reflect"),
+            # transforms.RandomHorizontalFlip(),
+            # transforms.RandomRotation(10),
+            # transforms.RandomCrop(48, padding=4, padding_mode="reflect"),
         )
 
         self.df_train = self.data_set_csv_reader(df_train)

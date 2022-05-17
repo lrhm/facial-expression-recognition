@@ -7,7 +7,7 @@ from torch import nn
 
 class ResNetBlock(nn.Module):
     def __init__(
-        self, c_in, act, subsample=False, c_out=-1, droupout=0.1, double_dropout=False
+        self, c_in, act, subsample=False, c_out=-1, droupout=0.01, double_dropout=False
     ):
 
         super().__init__()
@@ -120,7 +120,7 @@ class ResNetClassifier(nn.Module):
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
             nn.Linear(c_hidden[-1], self.num_classes),
-            nn.ReLU(),
+            # nn.ReLU(),
         )
 
     def init_params(self):

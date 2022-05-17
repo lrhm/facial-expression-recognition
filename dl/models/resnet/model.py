@@ -8,5 +8,5 @@ class Model(BaseClassificationModel):
         super().__init__(params)
 
         self.generator = ResNetClassifier(
-            num_blocks=[4, 4, 4, 4], c_hidden=[64, 64, 64, 64]
+            num_blocks=[4, 4, 4], c_hidden=[64, 64, 128]
         )

@@ -1,4 +1,4 @@
-from torch import nn
+from torch import batch_norm, nn
 import torch as t
 from torch.functional import F
 from ...base_torch_modules.gaussian_noise import GaussianNoise
@@ -12,7 +12,7 @@ class ConvBlock(nn.Module):
         kernel_size=3,
         stride=1,
         padding="same",
-        bias=False,
+        bias=True,
         droupout=0.1,
         act=nn.ReLU(inplace=True),
         bn=True,
@@ -47,19 +47,45 @@ class Conv2dClassifier(nn.Module):
     def __init__(self, c_in=1, num_classes=7):
         super().__init__()
 
-        self.noise_layer = GaussianNoise(0.1)
+        self.noise_layer = GaussianNoise(0.05)
+        self.hidden_dim = 64
 
         # 48x48x1
-        self.conv1 = ConvBlock(c_in, 64, kernel_size=3, stride=1, padding=1)
+        self.conv1 = ConvBlock(
+            c_in, self.hidden_dim, kernel_size=3, stride=1, padding=1, droupout=0.0
+        )
         # 48x48x64
-        self.conv2 = ConvBlock(64, 64, kernel_size=3, stride=2, padding=1)
+        self.conv2 = ConvBlock(
+            self.hidden_dim,
+            self.hidden_dim,
+            kernel_size=3,
+            stride=2,
+            padding=1,
+            droupout=0.01,
+        )
         # 24x24x64
-        self.conv3 = ConvBlock(64, 64, kernel_size=3, stride=2, padding=1)
+        self.conv3 = ConvBlock(
+            self.hidden_dim,
+            self.hidden_dim,
+            kernel_size=3,
+            stride=2,
+            padding=1,
+            droupout=0.01,
+        )
         # 12x12x64
-        self.conv4 = ConvBlock(64, 64, kernel_size=3, stride=2, padding=1)
+        self.conv4 = ConvBlock(
+            self.hidden_dim,
+            self.hidden_dim,
+            kernel_size=3,
+            stride=2,
+            padding=1,
+            droupout=0.01,
+        )
         # 6x6x64
 
-        self.classifier = nn.Sequential(nn.Linear(64 * 6 * 6, num_classes), nn.ReLU())
+        self.classifier = nn.Sequential(
+            nn.Linear(self.hidden_dim * 6 * 6, num_classes), nn.ReLU()
+        )
 
     def forward(self, x):
 
@@ -71,4 +97,6 @@ class Conv2dClassifier(nn.Module):
         x = self.conv3(x)
         x = self.conv4(x)
         x = x.view(x.size(0), -1)
-        return self.classifier(x)
+        x = self.classifier(x)
+        # x = F.softmax(x, dim=1)
+        return x

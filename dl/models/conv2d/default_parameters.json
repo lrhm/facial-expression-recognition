@@ -10,8 +10,8 @@
 	"b1": 0.5,
 	"b2": 0.999,
 	"gaussian_noise_std": 0.01,
-	"max_epochs": 12,
-	"early_stopping_patience": 5,
+	"max_epochs": 50,
+	"early_stopping_patience": 10,
 	"reduce_lr_on_plateau_patience": 0,
 	"data_location": "./datasets/data/train.csv"
 }

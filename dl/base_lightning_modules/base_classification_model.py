@@ -8,6 +8,7 @@ import ipdb
 import os
 import torchmetrics
 from torchmetrics.classification import accuracy
+
 #
 
 from dl.base_lightning_modules.plotter import plot_train_loss
@@ -22,6 +23,7 @@ class BaseClassificationModel(LightningModule):
         self.loss = t.nn.CrossEntropyLoss()
         self.val_accuracy = torchmetrics.Accuracy()
         self.test_accuracy = torchmetrics.Accuracy()
+        self.train_accuracy = torchmetrics.Accuracy()
         self.num_classes = 7
         self.iteration = 0
         self.train_loss_list = []
@@ -37,27 +39,38 @@ class BaseClassificationModel(LightningModule):
         y_pred = self(x)
         loss = self.loss(y_pred, y)
         if self.iteration % 50 == 0:
-            self.train_loss_list.append((self.iteration,loss.item()))
+            self.train_loss_list.append((self.iteration, loss.item()))
+        self.train_accuracy.update(y_pred, y)
         return {"loss": loss}
 
     def validation_epoch_end(self, outputs):
         acc = self.val_accuracy.compute()
         self.log("accuracy", acc, prog_bar=True)
-        self.log("val_loss", 1 - acc, prog_bar=True)
-        avg_loss = t.stack([x["val_loss_ce"] for x in outputs]).mean()
-        self.log("val_loss_ce", avg_loss, prog_bar=True)
+        # self.log("val_loss", 1 - acc, prog_bar=True)
+        avg_loss = t.stack([x["val_loss"] for x in outputs]).mean()
+        self.log("val_loss", avg_loss, prog_bar=True)
         self.val_loss_list.append((self.iteration, avg_loss))
         self.val_accuracy.reset()
         t.save(
-            self.state_dict(), os.path.join(self.params.save_path, "checkpoint.ckpt"),
+            self.state_dict(),
+            os.path.join(self.params.save_path, "checkpoint.ckpt"),
         )
-        plot_train_loss(self.train_loss_list, self.val_loss_list,
-                        save_path=os.path.join(self.params.save_path, "loss vs epochs.png"))
+        plot_train_loss(
+            self.train_loss_list,
+            self.val_loss_list,
+            save_path=os.path.join(self.params.save_path, "loss vs epochs.png"),
+        )
 
-        return {"val_loss": acc}
+        return {"val_loss": avg_loss}
 
     def training_epoch_end(self, outputs):
         avg_loss = t.stack([x["loss"] for x in outputs]).mean()
+        self.log("train_loss", avg_loss, prog_bar=True)
+        train_acc = self.train_accuracy.compute()
+        self.log("train_accuracy", train_acc, prog_bar=True)
+        self.train_accuracy.reset()
+
+        # return {"train_loss": avg_loss}
 
     def validation_step(self, batch: tuple[t.Tensor, t.Tensor], batch_idx: int):
         x, y = batch
@@ -66,7 +79,7 @@ class BaseClassificationModel(LightningModule):
         pred_y = self(x)
         loss = self.loss(pred_y, y).to(self.device)
         self.val_accuracy.update(pred_y, y)
-        return {"val_loss_ce": loss}
+        return {"val_loss": loss}
 
     def test_step(self, batch: tuple[t.Tensor, t.Tensor], batch_idx: int):
         x, y = batch
@@ -74,26 +87,30 @@ class BaseClassificationModel(LightningModule):
             pass
         pred_y = self(x)
         self.test_accuracy.update(pred_y, y)
-        return 
+        test_loss = self.loss(pred_y, y)
+        # ipdb.set_trace()
+        return {"test_loss": test_loss}
 
     def test_epoch_end(self, outputs):
         accuracy = self.test_accuracy.compute()
         self.test_accuracy.reset()
-        test_metrics = {
-            "accuracy": accuracy,
-        }
-        test_metrics = {k: v for k, v in test_metrics.items()}
-        self.log("lol", test_metrics, prog_bar=True)
+        avg_loss = t.stack([x["test_loss"] for x in outputs]).mean()
+        self.log("test_loss", avg_loss, prog_bar=True)
+        self.log("test_accuracy", accuracy, prog_bar=True)
+
+        # test_metrics = {
+        #     "accuracy": accuracy,
+        # }
+        # test_metrics = {k: v for k, v in test_metrics.items()}
+        # self.log("lol", test_metrics, prog_bar=True)
 
     def configure_optimizers(self):
         lr = self.params.lr
         b1 = self.params.b1
         b2 = self.params.b2
 
-        optimizer = t.optim.Adam(
-            self.generator.parameters(), lr=lr, betas=(b1, b2)
-        )
-        
+        optimizer = t.optim.Adam(self.generator.parameters(), lr=lr, betas=(b1, b2))
+
         scheduler = t.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode="min",
