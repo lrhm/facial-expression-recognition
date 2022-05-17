@@ -18,7 +18,7 @@ class BaseClassificationModel(LightningModule):
         self.params = params
         self.save_hyperparameters()
         self.generator = t.nn.Sequential()
-        self.loss = t.nn.BCELoss()
+        self.loss = t.nn.CrossEntropyLoss()
         self.val_accuracy = torchmetrics.Accuracy()
         self.test_accuracy = torchmetrics.Accuracy()
         self.num_classes = 7
@@ -34,15 +34,16 @@ class BaseClassificationModel(LightningModule):
         x, y = batch
         y_pred = self(x)
         loss = self.loss(y_pred, y)
-        self.train_loss_list.append((self.iteration, loss.item()))
+        if self.iteration % 10 == 0 :
+            self.train_loss_list.append((self.iteration, loss.item()))
         return {"loss": loss}
 
     def validation_epoch_end(self, outputs):
         acc = self.val_accuracy.compute()
         self.log("accuracy", acc, prog_bar=True)
         self.log("val_loss", 1 - acc, prog_bar=True)
-        avg_loss = t.stack([x["val_loss_bce"] for x in outputs]).mean()
-        self.log("val_loss_bce", avg_loss, prog_bar=True)
+        avg_loss = t.stack([x["val_loss_ce"] for x in outputs]).mean()
+        self.log("val_loss_ce", avg_loss, prog_bar=True)
         self.val_accuracy.reset()
         t.save(
             self.state_dict(), os.path.join(self.params.save_path, "checkpoint.ckpt"),
@@ -58,21 +59,15 @@ class BaseClassificationModel(LightningModule):
         if batch_idx == 0:
             pass
         pred_y = self(x)
-        loss = self.loss(pred_y, y)
-        maxes = t.argmax(pred_y, dim=1)
-        pred_y = t.eye(self.num_classes)[maxes].to(self.device)
-        y = y.int()
+        loss = self.loss(pred_y, y).to(self.device)
         self.val_accuracy.update(pred_y, y)
-        return {"val_loss_bce": loss}
+        return {"val_loss_ce": loss}
 
     def test_step(self, batch: tuple[t.Tensor, t.Tensor], batch_idx: int):
         x, y = batch
         if batch_idx == 0:
             pass
         pred_y = self(x)
-        maxes = t.argmax(pred_y, dim=1) # one hot encoding after softmax to predict one class not a probability
-        pred_y = t.eye(self.num_classes)[maxes].to(self.device)
-        y = y.int()
         self.test_accuracy.update(pred_y, y)
         return 
 

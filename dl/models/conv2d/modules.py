@@ -71,5 +71,4 @@ class Conv2dClassifier(nn.Module):
         x = self.conv3(x)
         x = self.conv4(x)
         x = x.view(x.size(0), -1)
-        x = self.classifier(x)
-        return F.softmax(x, dim=1)
+        return self.classifier(x)

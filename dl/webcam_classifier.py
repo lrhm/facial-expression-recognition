@@ -25,24 +25,14 @@ def video_capture(model):
             # only predict when there is something to predict
             if np.sum([roi_gray])!=0:
                 roi = roi_gray.astype('float')/255.0
-                roi = np.expand_dims(roi,axis=0)
-                # HERE WE MUST PREDICT USING THE MODEL to get output
-                # FOR THE LABEL JUST SET IT TO THE PREDICTED EMOTION FORM MODEL for ex label = labels[argmax(output)]
-                # roi to pytorch tensor
-
+                roi = np.expand_dims(roi, axis=0)
                 roi = torch.from_numpy(roi).float()
                 roi = roi.unsqueeze(0)
                 # ipdb.set_trace()
-                prediction = model(roi)
-                
-                max_idx = torch.argmax(prediction)
-                # tensor to number
-                idx = max_idx.item()
-                # ipdb.set_trace()
-                label = labels[idx]
-                # ipdb.set_trace()
-                # label= "test"
-
+                s = torch.nn.Softmax(dim=1) # because we get output logits in training for CE loss, we have to know soft max it
+                prediction = s(model(roi))
+                max_idx = torch.argmax(prediction).item()
+                label = labels[max_idx]
                 label_position = (x,y)
                 cv2.putText(frame,label,label_position,cv2.FONT_ITALIC,1,(255,0,0),2)
 

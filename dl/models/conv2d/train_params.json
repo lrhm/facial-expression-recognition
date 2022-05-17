@@ -1,7 +1,7 @@
 {
     "model": "conv2d",
-    "target": "/home/al/Project/facial-expression-recognition/dlm/results",
-    "cuda": true,
+    "target": "/Users/darongdegroot/PycharmProjects/facial-expression-recognition/dlm/results",
+    "cuda": false,
     "train_batch_size": 128,
     "test_batch_size": 128,
     "imsize": 48,
@@ -15,9 +15,9 @@
     "gaussian_noise_std": 0.01,
     "in_seq_len": 5,
     "out_seq_len": 5,
-    "max_epochs": 100,
+    "max_epochs": 12,
     "early_stopping_patience": 5,
     "reduce_lr_on_plateau_patience": 0,
-    "data_location": "./datasets/data/train.csv",
+    "data_location": "~/train.csv",
     "crop": 64
 }
