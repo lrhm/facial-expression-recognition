@@ -25,6 +25,7 @@ class BaseClassificationModel(LightningModule):
         self.num_classes = 7
         self.iteration = 0
         self.train_loss_list = []
+        self.val_loss_list = []
 
     def forward(self, z: t.Tensor) -> t.Tensor:
         out = self.generator(z)
@@ -34,9 +35,10 @@ class BaseClassificationModel(LightningModule):
         self.iteration += 1
         x, y = batch
         y_pred = self(x)
-        loss = self.loss(y_pred, y)
-        if self.iteration % 10 == 0 :
-            self.train_loss_list.append((self.iteration, loss.item()))
+        loss = self.loss((y_pred, y))
+
+        if self.iteration % 50 == 0:
+            self.train_loss_list.append((self.iteration,loss.item()))
         return {"loss": loss}
 
     def validation_epoch_end(self, outputs):
@@ -45,14 +47,17 @@ class BaseClassificationModel(LightningModule):
         self.log("val_loss", 1 - acc, prog_bar=True)
         avg_loss = t.stack([x["val_loss_ce"] for x in outputs]).mean()
         self.log("val_loss_ce", avg_loss, prog_bar=True)
+        self.val_loss_list.append((self.iteration, avg_loss))
         self.val_accuracy.reset()
         t.save(
             self.state_dict(), os.path.join(self.params.save_path, "checkpoint.ckpt"),
         )
+        plot_train_loss(self.train_loss_list, self.val_loss_list,
+                        save_path=os.path.join(self.params.save_path, "training_loss.png"))
+
         return {"val_loss": acc}
 
     def training_epoch_end(self, outputs):
-        plot_train_loss(self.train_loss_list, save_path=os.path.join(self.params.save_path, "training_loss.png"))
         avg_loss = t.stack([x["loss"] for x in outputs]).mean()
 
     def validation_step(self, batch: tuple[t.Tensor, t.Tensor], batch_idx: int):
