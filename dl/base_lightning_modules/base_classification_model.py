@@ -35,8 +35,7 @@ class BaseClassificationModel(LightningModule):
         self.iteration += 1
         x, y = batch
         y_pred = self(x)
-        loss = self.loss((y_pred, y))
-
+        loss = self.loss(y_pred, y)
         if self.iteration % 50 == 0:
             self.train_loss_list.append((self.iteration,loss.item()))
         return {"loss": loss}
