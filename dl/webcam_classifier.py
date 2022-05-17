@@ -40,6 +40,6 @@ def video_capture(model):
         #press x to quit
         if cv2.waitKey(1) & 0xFF == ord('x'):
             break
-
+#
     vid_capture.release()
     cv2.destroyAllWindows()
