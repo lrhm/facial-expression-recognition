@@ -9,6 +9,9 @@ import os
 import torchmetrics
 from torchmetrics.classification import accuracy
 
+from dl.base_lightning_modules.plotter import plot_train_loss
+
+
 class BaseClassificationModel(LightningModule):
     def __init__(self, params: Namespace):
         super().__init__()
@@ -19,15 +22,19 @@ class BaseClassificationModel(LightningModule):
         self.val_accuracy = torchmetrics.Accuracy()
         self.test_accuracy = torchmetrics.Accuracy()
         self.num_classes = 7
+        self.iteration = 0
+        self.train_loss_list = []
 
     def forward(self, z: t.Tensor) -> t.Tensor:
         out = self.generator(z)
         return out
 
     def training_step(self, batch: tuple[t.Tensor, t.Tensor], batch_idx: int):
+        self.iteration += 1
         x, y = batch
         y_pred = self(x)
         loss = self.loss(y_pred, y)
+        self.train_loss_list.append((self.iteration, loss.item()))
         return {"loss": loss}
 
     def validation_epoch_end(self, outputs):
@@ -43,6 +50,8 @@ class BaseClassificationModel(LightningModule):
         return {"val_loss": acc}
 
     def training_epoch_end(self, outputs):
+        ipdb.set_trace()
+        plot_train_loss(self.train_loss_list, save_path=os.path.join(self.params.save_path, "training_loss.png"))
         avg_loss = t.stack([x["loss"] for x in outputs]).mean()
 
     def validation_step(self, batch: tuple[t.Tensor, t.Tensor], batch_idx: int):
@@ -75,7 +84,7 @@ class BaseClassificationModel(LightningModule):
             "accuracy": accuracy,
         }
         test_metrics = {k: v for k, v in test_metrics.items()}
-        self.log("test_performance", test_metrics, prog_bar=True)
+        self.log("alisucks", test_metrics, prog_bar=True)
 
     def configure_optimizers(self):
         lr = self.params.lr

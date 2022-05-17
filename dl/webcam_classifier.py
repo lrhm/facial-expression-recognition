@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import torch
 face_classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-labels = ['Angry','Disgust','Fear','Happy','Neutral', 'Sad', 'Surprise']
+labels = ['Angry','Disgust','Fear','Happy','Sad', 'Surprise', 'Neutral']
 
 vid_capture = cv2.VideoCapture(0)
 
